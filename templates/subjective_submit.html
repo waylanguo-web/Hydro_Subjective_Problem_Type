@@ -1,0 +1,27 @@
+{% extends "layout/basic.html" %}
+{% block content %}
+<div class="row">
+  <div class="medium-9 columns">
+    <div class="section">
+      <div class="section__header"><h1 class="section__title">{{ _('Subjective submission') }}</h1></div>
+      <div class="section__body typo">
+        <form method="post" enctype="multipart/form-data" data-subjective-upload data-max-files="{{ maxFiles }}" data-max-bytes="{{ maxBytes }}" data-file-limit="{{ _('Select between 1 and 10 files.') }}" data-size-limit="{{ _('The total file size cannot exceed 20 MB.') }}" data-upload-error="{{ _('Upload failed. Please retry.') }}" data-remove="{{ _('Remove file') }}">
+          <input type="hidden" name="subjectiveCsrf" value="{{ subjectiveCsrf }}">
+          <input type="hidden" name="submissionNonce" value="{{ submissionNonce }}">
+          <p>{{ _('Upload 1–10 files of any format, with a total size up to 20 MB.') }}</p>
+          <div data-subjective-drop class="subjective-drop">
+            <label for="subjective-attachments">{{ _('Choose or drop files here') }}</label>
+            <input id="subjective-attachments" type="file" name="attachments" multiple required>
+          </div>
+          <ul data-subjective-files></ul>
+          <p data-subjective-size></p>
+          <progress data-subjective-progress max="100" value="0" hidden aria-label="{{ _('Upload progress') }}"></progress>
+          <p data-subjective-error class="text-red" role="status" aria-live="polite"></p>
+          <button type="submit" class="rounded primary button">{{ _('Submit') }}</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="medium-3 columns">{% include "partials/problem_sidebar.html" %}</div>
+</div>
+{% endblock %}

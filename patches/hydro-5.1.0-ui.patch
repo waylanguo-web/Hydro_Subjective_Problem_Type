@@ -1,0 +1,290 @@
+diff --git a/packages/common/types.ts b/packages/common/types.ts
+index 6f7a053..a3cc769 100644
+--- a/packages/common/types.ts
++++ b/packages/common/types.ts
+@@ -9,6 +9,7 @@ export enum ProblemType {
+     Interactive = 'interactive',
+     Communication = 'communication',
+     Objective = 'objective',
++    Subjective = 'subjective',
+     Remote = 'remote_judge',
+ }
+ 
+diff --git a/packages/ui-default/build/config/webpack.ts b/packages/ui-default/build/config/webpack.ts
+index 8066ad8..41a97e2 100644
+--- a/packages/ui-default/build/config/webpack.ts
++++ b/packages/ui-default/build/config/webpack.ts
+@@ -82,8 +82,7 @@ export default async function (env: { watch?: boolean, production?: boolean, mea
+       options: {
+         stylusOptions: {
+           preferPathResolver: 'webpack',
+-          use: [require('rupture')()],
+-          import: ['~vj/common/common.inc.styl'],
++          import: [require.resolve('rupture/rupture/index.styl'), root('common/common.inc.styl')],
+         },
+       },
+     };
+@@ -193,7 +192,7 @@ export default async function (env: { watch?: boolean, production?: boolean, mea
+         },
+         {
+           test: /\.ts$/,
+-          include: /@types\//,
++          include: /@types[\\/]/,
+           type: 'asset/inline',
+           generator: {
+             dataUrl: (buf) => buf.toString(),
+@@ -201,7 +200,7 @@ export default async function (env: { watch?: boolean, production?: boolean, mea
+         },
+         {
+           test: /\.[mc]?[jt]sx?$/,
+-          exclude: [/@types\//, /components\/message\//, /entry\.js/],
++          exclude: [/@types[\\/]/, /components\/message\//, /entry\.js/],
+           type: 'javascript/auto',
+           use: [esbuildLoader()],
+         },
+diff --git a/packages/ui-default/common/common.inc.styl b/packages/ui-default/common/common.inc.styl
+index ff72825..7c29f85 100644
+--- a/packages/ui-default/common/common.inc.styl
++++ b/packages/ui-default/common/common.inc.styl
+@@ -4,7 +4,7 @@ rupture.mobile-cutoff = unit(breakpoints.mobile, 'px')
+ rupture.desktop-cutoff = unit(breakpoints.desktop, 'px')
+ rupture.hd-cutoff = unit(breakpoints.hd, 'px')
+ 
+-@import '~vj/misc/.iconfont/webicon.inc.styl'
++@import '../misc/.iconfont/webicon.inc.styl'
+ @import 'color.inc.styl'
+ @import 'variables.inc.styl'
+ @import 'easing.inc.styl'
+diff --git a/packages/ui-default/components/monaco/schema/problemconfig.ts b/packages/ui-default/components/monaco/schema/problemconfig.ts
+index 875551e..3c9820d 100644
+--- a/packages/ui-default/components/monaco/schema/problemconfig.ts
++++ b/packages/ui-default/components/monaco/schema/problemconfig.ts
+@@ -66,7 +66,7 @@ const problemConfigSchema: JSONSchema7 = {
+   properties: {
+     redirect: { type: 'string', pattern: '[0-9a-zA-Z_-]+\\/[0-9]+' },
+     key: { type: 'string', pattern: '[0-9a-f]{32}' },
+-    type: { enum: ['default', 'interactive', 'communication', 'submit_answer', 'objective', 'remote_judge'] },
++    type: { enum: ['default', 'interactive', 'communication', 'submit_answer', 'objective', 'remote_judge', 'subjective'] },
+     subType: { type: 'string' },
+     langs: { type: 'array', items: { type: 'string' } },
+     target: { type: 'string' },
+diff --git a/packages/ui-default/components/problemconfig/ProblemConfigEditor.tsx b/packages/ui-default/components/problemconfig/ProblemConfigEditor.tsx
+index 23fc449..42aa23c 100644
+--- a/packages/ui-default/components/problemconfig/ProblemConfigEditor.tsx
++++ b/packages/ui-default/components/problemconfig/ProblemConfigEditor.tsx
+@@ -42,6 +42,7 @@ const subtasksKey = [
+ const casesKey = ['time', 'memory', 'input', 'output'];
+ 
+ export function configYamlFormat(config: ProblemConfigFile) {
++  if (config.type === 'subjective') return { type: config.type };
+   const formatConfig: ProblemConfigFile = {};
+   configKey.forEach((key) => {
+     if (config[key] !== undefined) {
+diff --git a/packages/ui-default/components/problemconfig/ProblemConfigForm.tsx b/packages/ui-default/components/problemconfig/ProblemConfigForm.tsx
+index 41f6b5c..f0e6cca 100644
+--- a/packages/ui-default/components/problemconfig/ProblemConfigForm.tsx
++++ b/packages/ui-default/components/problemconfig/ProblemConfigForm.tsx
+@@ -129,7 +129,7 @@ export default function ProblemConfigForm() {
+       <ProblemType />
+       {Type === 'default' && <FileIOConfig />}
+       {['default', 'interactive'].includes(Type) && <MultiPassConfig />}
+-      {!['submit_answer', 'objective'].includes(Type) && (
++      {!['submit_answer', 'objective', 'subjective'].includes(Type) && (
+         <>
+           <ExtraFilesConfig />
+           <LangConfig />
+diff --git a/packages/ui-default/components/problemconfig/ProblemType.tsx b/packages/ui-default/components/problemconfig/ProblemType.tsx
+index cd53144..ff6c003 100644
+--- a/packages/ui-default/components/problemconfig/ProblemType.tsx
++++ b/packages/ui-default/components/problemconfig/ProblemType.tsx
+@@ -1,4 +1,4 @@
+-import { Card, SegmentedControl, Switch } from '@mantine/core';
++import { Card, NativeSelect, SegmentedControl, Switch } from '@mantine/core';
+ import React, { useEffect } from 'react';
+ import { useDispatch, useSelector } from 'react-redux';
+ import { i18n } from 'vj/utils';
+@@ -27,19 +27,24 @@ export default function ProblemType() {
+       <Card withBorder style={{ padding: 10, overflow: 'visible' }}>
+         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+           <div>{i18n('Problem Type')}</div>
+-          <SegmentedControl
++          <NativeSelect
++            aria-label={i18n('Problem Type')}
+             value={Type}
+-            onChange={dispatcher({ type: 'CONFIG_FORM_UPDATE', key: 'type' })}
++            onChange={(ev) => dispatcher({ type: 'CONFIG_FORM_UPDATE', key: 'type' })(ev.currentTarget.value)}
+             data={[
+               { label: i18n('problem_type.default'), value: 'default' },
+               { label: i18n('problem_type.interactive'), value: 'interactive' },
+               { label: i18n('problem_type.communication'), value: 'communication' },
+               { label: i18n('problem_type.submit_answer'), value: 'submit_answer' },
+               { label: i18n('problem_type.objective'), value: 'objective' },
++              { label: i18n('problem_type.subjective'), value: 'subjective' },
+             ]}
+           />
+         </div>
+ 
++        {Type === 'subjective' && <p>{i18n('Subjective problems are graded by an administrator out of 100.')}</p>}
++        {Type === 'subjective' && <p>{i18n('Upload 1–10 files of any format, with a total size up to 20 MB.')}</p>}
++
+         {['default', 'submit_answer'].includes(Type) && (
+           <>
+             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+diff --git a/packages/ui-default/components/problemconfig/index.tsx b/packages/ui-default/components/problemconfig/index.tsx
+index db39720..818d06b 100644
+--- a/packages/ui-default/components/problemconfig/index.tsx
++++ b/packages/ui-default/components/problemconfig/index.tsx
+@@ -20,6 +20,7 @@ export default function ProblemConfig(props: Props) {
+   const [tabs, setTabs] = React.useState<HTMLDivElement | null>(null);
+   const [editor, setEditor] = React.useState<any>(null);
+   const store = useStore<RootState>();
++  const manual = useSelector((state: RootState) => state.config.type === 'subjective');
+   const valid = useSelector((state: RootState) => state.config.__valid);
+   const errors = useSelector((state: RootState) => state.config.__errors, (a, b) => JSON.stringify(a) === JSON.stringify(b));
+ 
+@@ -59,7 +60,7 @@ export default function ProblemConfig(props: Props) {
+         <Allotment.Pane>
+           <Tabs
+             ref={setTabs}
+-            value={valid ? selected : 'errors'}
++            value={valid ? (manual ? 'basic' : selected) : 'errors'}
+             keepMounted={false}
+             style={{ paddingLeft: 20 }}
+             onChange={(t) => (t !== 'errors' && t && setSelected(t.toString()))}
+@@ -67,7 +68,7 @@ export default function ProblemConfig(props: Props) {
+             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+               <Tabs.List>
+                 <Tabs.Tab value="basic" disabled={!valid}>{i18n('Basic')}</Tabs.Tab>
+-                <Tabs.Tab value="subtasks" disabled={!valid}>{i18n('Subtasks')}</Tabs.Tab>
++                {!manual && <Tabs.Tab value="subtasks" disabled={!valid}>{i18n('Subtasks')}</Tabs.Tab>}
+                 <Tabs.Tab value="errors" disabled={valid}>{errors.length ? `Errors(${errors.length})` : 'No Errors'}</Tabs.Tab>
+               </Tabs.List>
+               <Button onClick={handleSave}>
+diff --git a/packages/ui-default/pages/problem_config.page.tsx b/packages/ui-default/pages/problem_config.page.tsx
+index 46f66b9..42435d9 100644
+--- a/packages/ui-default/pages/problem_config.page.tsx
++++ b/packages/ui-default/pages/problem_config.page.tsx
+@@ -120,6 +120,10 @@ const page = new NamedPage('problem_config', () => {
+       // TODO set yaml schema
+       const state = store.getState();
+       if (!state.config.__loaded) return;
++      if (state.config.type === 'subjective') {
++        unsubscribe();
++        return;
++      }
+       if (state.config.cases) {
+         const score = state.config.score * state.config.cases.length;
+         state.config.subtasks = [{
+diff --git a/packages/ui-default/pages/user_detail.page.styl b/packages/ui-default/pages/user_detail.page.styl
+index b37ec25..5796027 100644
+--- a/packages/ui-default/pages/user_detail.page.styl
++++ b/packages/ui-default/pages/user_detail.page.styl
+@@ -1,4 +1,4 @@
+-@import '~vj/components/tab/var.inc.styl'
++@import '../components/tab/var.inc.styl'
+ 
+ .page--user_detail
+ 
+diff --git a/packages/ui-default/templates/components/record.html b/packages/ui-default/templates/components/record.html
+index bcf615c..2a4250f 100644
+--- a/packages/ui-default/templates/components/record.html
++++ b/packages/ui-default/templates/components/record.html
+@@ -6,10 +6,13 @@
+       href="{{ url('record_detail', rid=rdoc[rid_key], domainId=rdoc.domainId) if allDomain else url('record_detail', rid=rdoc[rid_key]) }}"
+       class="record-status--text {{ model.builtin.STATUS_CODES[rdoc.status] }}"
+     >
+-      {% if typeof(rdoc['score']) == 'number' %}
++      {% set manual = rdoc.lang == 'subjective' %}
++      {% if typeof(rdoc['score']) == 'number' and (not manual or rdoc.status != STATUS.STATUS_WAITING) %}
+       <span style="color: {{ utils.status.getScoreColor(rdoc.score|default(0)) }}">{{ displayScore|default(rdoc.score|default(0)) }}</span>
+       {% endif %}
+-      {{ model.builtin.STATUS_SHORT_TEXTS[rdoc.status] if short else model.builtin.STATUS_TEXTS[rdoc.status] }}
++      {% if manual and rdoc.status == STATUS.STATUS_WAITING %}{{ _('Awaiting grading') }}
++      {% elif manual %}{{ _('Graded') }}
++      {% else %}{{ model.builtin.STATUS_SHORT_TEXTS[rdoc.status] if short else model.builtin.STATUS_TEXTS[rdoc.status] }}{% endif %}
+     </a>
+   </div>
+   {% if rdoc.status == STATUS.STATUS_JUDGING %}
+diff --git a/packages/ui-default/templates/partials/problem_sidebar_contest.html b/packages/ui-default/templates/partials/problem_sidebar_contest.html
+index ba02df9..7d9937a 100644
+--- a/packages/ui-default/templates/partials/problem_sidebar_contest.html
++++ b/packages/ui-default/templates/partials/problem_sidebar_contest.html
+@@ -7,7 +7,9 @@
+ {% endif %}
+   <div>
+     <ol class="menu">
+-    {% if mode == 'contest' or mode == 'correction' %}
++    {% if mode == 'contest' and pdoc.config.type == 'subjective' %}
++      <li class="menu__item"><span class="menu__link disabled">{{ _('Subjective submissions are unavailable during contests.') }}</span></li>
++    {% elif mode == 'contest' or mode == 'correction' %}
+     {% if page_name == 'contest_detail_problem' and handler.ctx.setting.get('ui-default.enableScratchpad') %}
+       <li class="menu__item scratchpad--hide nojs--hide"><a class="menu__link highlight" name="problem-sidebar__open-scratchpad" href="javascript:;" data-global-hotkey="alt+e">
+         <span class="icon icon-enlarge"></span> {{ _('Open Scratchpad') }} (Alt+E)
+diff --git a/packages/ui-default/templates/partials/problem_sidebar_homework.html b/packages/ui-default/templates/partials/problem_sidebar_homework.html
+index 9684be5..fd54f9f 100644
+--- a/packages/ui-default/templates/partials/problem_sidebar_homework.html
++++ b/packages/ui-default/templates/partials/problem_sidebar_homework.html
+@@ -8,7 +8,7 @@
+   <div>
+     <ol class="menu">
+     {% if model.contest.isOngoing(tdoc, tsdoc) or model.contest.isExtended(tdoc, tsdoc) %}
+-    {% if page_name == 'homework_detail_problem' and handler.ctx.setting.get('ui-default.enableScratchpad') %}
++    {% if page_name == 'homework_detail_problem' and pdoc.config.type != 'subjective' and handler.ctx.setting.get('ui-default.enableScratchpad') %}
+       <li class="menu__item scratchpad--hide nojs--hide"><a class="menu__link highlight" name="problem-sidebar__open-scratchpad" href="javascript:;" data-global-hotkey="alt+e">
+         <span class="icon icon-enlarge"></span> {{ _('Open Scratchpad') }} (Alt+E)
+       </a></li>
+diff --git a/packages/ui-default/templates/partials/problem_sidebar_normal.html b/packages/ui-default/templates/partials/problem_sidebar_normal.html
+index b958beb..68c39fe 100644
+--- a/packages/ui-default/templates/partials/problem_sidebar_normal.html
++++ b/packages/ui-default/templates/partials/problem_sidebar_normal.html
+@@ -28,7 +28,7 @@
+       <li class="menu__seperator"></li>
+     {% endif %}
+     {% if page_name == 'problem_detail' %}
+-    {% if handler.user.hasPerm(perm.PERM_SUBMIT_PROBLEM) and handler.ctx.setting.get('ui-default.enableScratchpad') %}
++    {% if handler.user.hasPerm(perm.PERM_SUBMIT_PROBLEM) and pdoc.config.type != 'subjective' and handler.ctx.setting.get('ui-default.enableScratchpad') %}
+       <li class="menu__item scratchpad--hide nojs--hide"><a class="menu__link highlight" name="problem-sidebar__open-scratchpad" href="javascript:;" data-global-hotkey="alt+e">
+         <span class="icon icon-enlarge"></span> {{ _('Open Scratchpad') }} (Alt+E)
+       </a></li>
+@@ -58,7 +58,7 @@
+         <span class="icon icon-send"></span> {{ _('No Permission to Submit') }}
+       </a></li>
+     {% endif %}
+-    {% if handler.user.hasPerm(perm.PERM_REJUDGE_PROBLEM) %}
++    {% if pdoc.config.type != 'subjective' and handler.user.hasPerm(perm.PERM_REJUDGE_PROBLEM) %}
+       <li class="menu__item">
+         <form method="post" action="{{ url('problem_detail', pid=pdoc.docId) }}">
+           <input type="hidden" name="operation" value="rejudge">
+diff --git a/packages/ui-default/templates/record_main.html b/packages/ui-default/templates/record_main.html
+index f937bee..06af5ff 100644
+--- a/packages/ui-default/templates/record_main.html
++++ b/packages/ui-default/templates/record_main.html
+@@ -19,6 +19,7 @@
+           <div class="section__tools">
+             <button type="submit" class="primary button"><span class="icon icon-filter"></span> {{ _('Filter') }}</button>
+             <a href="{{ url('record_main') }}" class="button">{{ _('Reset') }}</a>
++            {% if subjectiveQueueUrl %}<a href="{{ subjectiveQueueUrl }}" class="button">{{ _('Subjective grading queue') }}</a>{% endif %}
+           </div>
+         </div>
+         <div class="section__body">
+diff --git a/packages/ui-default/templates/record_main_tr.html b/packages/ui-default/templates/record_main_tr.html
+index f05b899..3610770 100644
+--- a/packages/ui-default/templates/record_main_tr.html
++++ b/packages/ui-default/templates/record_main_tr.html
+@@ -5,7 +5,7 @@
+   {% set _isPretest = rdoc.contest and rdoc.contest.toString() == '000000000000000000000000' %}
+   {{ record.render_status_td(rdoc, allDomain = allDomain) }}
+   <td class="col--problem col--problem-name">
+-  {% if handler.user.hasPerm(perm.PERM_REJUDGE) and not rdoc.files.hack and not _isPretest %}
++  {% if handler.user.hasPerm(perm.PERM_REJUDGE) and rdoc.lang != 'subjective' and not rdoc.files.hack and not _isPretest %}
+     <form class="form--inline" method="post" action="{{ url('record_detail', rid=rdoc._id, domainId=rdoc.domainId) }}">
+       <button type="submit" name="operation" value="rejudge" class="link text-maroon lighter">
+         <span class="icon icon-refresh"></span>
+@@ -30,6 +30,6 @@
+   <td class="col--submit-by">{{ user.render_inline(udoc, avatar=false, badge=false) }}</td>
+   <td class="col--time">{% if rdoc['time'] %}{% if [STATUS.STATUS_TIME_LIMIT_EXCEEDED, STATUS.STATUS_MEMORY_LIMIT_EXCEEDED, STATUS.STATUS_OUTPUT_LIMIT_EXCEEDED].includes(rdoc['status']) %}&ge;{% endif %}{{ rdoc.time|round|int }}ms{% else %}-{% endif %}</td>
+   <td class="col--memory">{% if rdoc['memory'] %}{% if [STATUS.STATUS_TIME_LIMIT_EXCEEDED, STATUS.STATUS_MEMORY_LIMIT_EXCEEDED, STATUS.STATUS_OUTPUT_LIMIT_EXCEEDED].includes(rdoc['status']) %}&ge;{% endif %}{{ size(rdoc.memory, 1024) }}{% else %}-{% endif %}</td>
+-  <td class="col--lang">{{ model.setting.langs[rdoc['lang']].display }}</td>
++  <td class="col--lang">{{ _('problem_type.subjective') if rdoc.lang == 'subjective' else model.setting.langs[rdoc['lang']].display }}</td>
+   <td class="col--submit-at">{{ datetimeSpan(rdoc['_id'])|safe }}</td>
+ </tr>

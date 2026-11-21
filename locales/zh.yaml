@@ -1,0 +1,23 @@
+problem_type.subjective: 主观题
+Subjective submission: 主观题递交
+Subjective grading queue: 主观题待评分
+Awaiting grading: 待评分
+Graded: 已评分
+Grade submission: 人工评分
+Attachments: 附件
+Score (0–100): 分数（0–100）
+Feedback (optional): 评语（选填）
+Save grade: 保存评分
+Grade history: 评分历史
+Another grade was saved. Review the current grade before saving again.: 已有新的评分保存，请查看当前评分后再修改。
+Homework ID: 作业 ID
+No submissions awaiting grading.: 暂无待评分提交。
+Upload 1–10 files of any format, with a total size up to 20 MB.: 可上传 1–10 个任意格式的文件，合计最多 20 MB。
+Choose or drop files here: 点击选择文件，或将文件拖到这里
+Upload progress: 上传进度
+Remove file: 移除文件
+Select between 1 and 10 files.: 请选择 1–10 个文件。
+The total file size cannot exceed 20 MB.: 所有附件合计不能超过 20 MB。
+Upload failed. Please retry.: 上传失败，请重试。
+Subjective problems are graded by an administrator out of 100.: 主观题由管理员评分，满分 100 分。
+Subjective submissions are unavailable during contests.: 比赛内暂不开放主观题递交。

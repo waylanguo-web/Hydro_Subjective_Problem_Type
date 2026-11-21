@@ -1,0 +1,24 @@
+.subjective-drop {
+    border: 1px dashed currentColor;
+    border-radius: 4px;
+    padding: 1rem;
+}
+
+.subjective-drop input {
+    display: block;
+    max-width: 100%;
+    margin-top: .5rem;
+}
+
+[data-subjective-progress] {
+    width: 100%;
+}
+
+.subjective-comment {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.subjective-score {
+    max-width: 8rem;
+}

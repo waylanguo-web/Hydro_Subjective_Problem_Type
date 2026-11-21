@@ -1,0 +1,34 @@
+{% extends "layout/basic.html" %}
+{% block content %}
+<div class="row">
+  <div class="medium-12 columns">
+    <div class="section">
+      <div class="section__header"><h1 class="section__title">{{ _('Subjective grading queue') }}</h1></div>
+      <div class="section__body typo">
+        <form method="get" class="row">
+          <div class="medium-4 columns"><label>{{ _('By Problem') }} <input type="text" name="pid" class="textbox" value="{{ filterPid }}"></label></div>
+          <div class="medium-5 columns"><label>{{ _('Homework ID') }} <input type="text" name="tid" class="textbox" value="{{ filterTid }}" pattern="[a-fA-F0-9]{24}"></label></div>
+          <div class="medium-3 columns"><button type="submit" class="primary button">{{ _('Filter') }}</button></div>
+        </form>
+        {% if entries.length %}
+        <table class="data-table">
+          <thead><tr><th>{{ _('Submit At') }}</th><th>{{ _('Problem') }}</th><th>{{ _('Submit By') }}</th><th>{{ _('Homework') }}</th><th>{{ _('Status') }}</th></tr></thead>
+          <tbody>
+            {% for entry in entries %}
+            <tr>
+              <td>{{ datetimeSpan(entry._id, false)|safe }}</td>
+              <td><a href="{{ url('problem_detail', pid=entry.pid, query={tid:entry.contest} if entry.contest else {}) }}">{{ entry.pid }}</a></td>
+              <td><a href="{{ url('user_detail', uid=entry.uid) }}">{{ entry.uid }}</a></td>
+              <td>{% if entry.contest %}<a href="{{ url('homework_detail', tid=entry.contest) }}">{{ entry.contest }}</a>{% else %}—{% endif %}</td>
+              <td><a href="{{ url('record_detail', rid=entry._id) }}">{{ _('Awaiting grading') }}</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}<p>{{ _('No submissions awaiting grading.') }}</p>{% endif %}
+        {% if nextUrl %}<a class="button" href="{{ nextUrl }}">{{ _('Next Page') }}</a>{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{
+  "name": "hydrooj-subjective-problem-type",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "test:integration": "node tests/integration.cjs"
+  },
+  "engines": { "node": ">=22" },
+  "dependencies": { "js-yaml": "^4.1.1" },
+  "peerDependencies": { "hydrooj": "~5.1.0" },
+  "peerDependenciesMeta": { "hydrooj": { "optional": true } }
+}
