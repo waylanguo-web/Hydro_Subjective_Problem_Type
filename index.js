@@ -74,8 +74,7 @@ async function install(ctx, hydro) {
         if (!isSubjective(h.pdoc)) return;
         ensureSubmissionContext(h);
         h.response.template = 'subjective_submit.html';
-        const pageName = h.tdoc ? 'homework_detail_problem_submit' : 'problem_submit';
-        h.response.body = { ...h.response.body, page_name: pageName, subjectiveCsrf: csrf(h),
+        h.response.body = { ...h.response.body, page_name: 'subjective_submit', subjectiveCsrf: csrf(h),
             submissionNonce: randomUUID(), maxFiles: MAX_FILES, maxBytes: MAX_BYTES };
     });
 

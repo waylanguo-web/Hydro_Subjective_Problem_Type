@@ -96,6 +96,7 @@ const request = localRequire('supertest');
         await requestTo.get(`${submit}?tid=${comp}`).set('Cookie', student).set('Accept', 'application/json').expect(400);
         const submittedFiles = [[Buffer.from('answer'), '中文.txt'], [Buffer.from('<html>'), 'answer.html']];
         const f = (await getForm(homeworkPath, student)).body;
+        assert.equal(f.page_name, 'subjective_submit');
         assert.ok(f.subjectiveCsrf && f.submissionNonce);
         const first = await multipart(homeworkPath, student, f.submissionNonce, f.subjectiveCsrf, submittedFiles).expect(200);
         assert.match(first.body.url, /^\/record\//);
@@ -105,7 +106,8 @@ const request = localRequire('supertest');
         const page = (await getForm(resultPath, student)).body;
         assert.equal(page.graded, false);
         assert.deepEqual(page.attachments.map((file) => file.name).sort(), ['answer.html', '中文.txt']);
-        await requestTo.get(homeworkPath).set('Cookie', student).set('Accept-Language', 'en').expect(200).expect(/data-subjective-upload/);
+        await requestTo.get(homeworkPath).set('Cookie', student).set('Accept-Language', 'en').expect(200)
+            .expect(/data-page="subjective_submit"/).expect(/data-subjective-upload/);
         await requestTo.get(resultPath).set('Cookie', student).set('Accept-Language', 'en').expect(200).expect(/Awaiting grading/);
         const download = page.attachments.find((file) => file.name === 'answer.html').url;
         await requestTo.get(download).set('Cookie', student).expect(200).expect('Content-Type', /application\/octet-stream/)
@@ -119,9 +121,9 @@ const request = localRequire('supertest');
         const gradeWith = (form, who, score, comment) => requestTo.post(form.gradeUrl).set('Cookie', who)
             .set('Accept', 'application/json').send({ subjectiveCsrf: form.subjectiveCsrf, revision: form.revision, score, comment });
         await gradeWith(toGrade, student, 100, 'bypass').expect(403);
-        const queue = await getForm('/domain/subjective', reviewer);
+        const queue = await getForm(`/domain/subjective?tid=${homework}`, reviewer);
         assert.equal(queue.body.entries[0]._id, first.body.rid);
-        assert.equal((await getForm('/subjective/queue', reviewer)).body.entries[0]._id, first.body.rid);
+        assert.equal((await getForm(`/subjective/queue?tid=${homework}`, reviewer)).body.entries[0]._id, first.body.rid);
         await requestTo.get('/domain/dashboard').set('Cookie', reviewer).set('Accept-Language', 'zh-CN').expect(200).expect(/主观题批改/);
         const reviewPath = `/domain/subjective/${first.body.rid}`;
         const review = (await getForm(reviewPath, reviewer)).body;

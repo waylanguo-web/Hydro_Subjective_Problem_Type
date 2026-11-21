@@ -96,4 +96,4 @@ function mountUpload() {
     refresh();
 }
 
-addPage(new NamedPage(['problem_submit', 'homework_detail_problem_submit'], mountUpload));
+addPage(new NamedPage('subjective_submit', mountUpload));

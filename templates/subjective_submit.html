@@ -1,4 +1,7 @@
 {% extends "layout/basic.html" %}
+{% macro submit_sidebar(page_name) %}
+  {% include "partials/problem_sidebar.html" %}
+{% endmacro %}
 {% block content %}
 <div class="row">
   <div class="medium-9 columns">
@@ -22,6 +25,6 @@
       </div>
     </div>
   </div>
-  <div class="medium-3 columns">{% include "partials/problem_sidebar.html" %}</div>
+  <div class="medium-3 columns">{{ submit_sidebar('homework_detail_problem_submit' if tdoc else 'problem_submit') }}</div>
 </div>
 {% endblock %}
