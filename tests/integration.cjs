@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { createRequire } = require('node:module');
-if (!process.argv[2]) throw new Error('Pass the path to a built Hydro 5.1.0 source checkout.');
+if (!process.argv[2]) throw new Error('Pass the path to a built Hydro source checkout.');
 const upstream = path.resolve(process.argv[2]);
 const plugin = path.resolve(__dirname, '..');
 const localRequire = createRequire(path.join(upstream, 'package.json'));

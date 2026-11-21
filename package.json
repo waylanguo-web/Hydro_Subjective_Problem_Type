@@ -9,6 +9,6 @@
   },
   "engines": { "node": ">=22" },
   "dependencies": { "js-yaml": "^4.1.1" },
-  "peerDependencies": { "hydrooj": "~5.1.0" },
+  "peerDependencies": { "hydrooj": "~5.0.7 || ~5.1.0" },
   "peerDependenciesMeta": { "hydrooj": { "optional": true } }
 }

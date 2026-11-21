@@ -1,0 +1,49 @@
+diff --git a/packages/ui-default/components/monaco/languages/yaml.ts b/packages/ui-default/components/monaco/languages/yaml.ts
+index 55ae952..d477c9c 100644
+--- a/packages/ui-default/components/monaco/languages/yaml.ts
++++ b/packages/ui-default/components/monaco/languages/yaml.ts
+@@ -2,7 +2,7 @@ import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
+ import { configureMonacoYaml } from 'monaco-yaml';
+ import problemConfigSchema from '../schema/problemconfig';
+ 
+-configureMonacoYaml(monaco, {
++const yaml = configureMonacoYaml(monaco, {
+   validate: true,
+   enableSchemaRequest: true,
+   hover: true,
+@@ -20,3 +20,14 @@ configureMonacoYaml(monaco, {
+     },
+   ],
+ });
++
++// Older RMJ addons expect Monaco's legacy YAML options interface.
++if (!('yaml' in monaco.languages)) {
++  Object.defineProperty(monaco.languages, 'yaml', {
++    configurable: true,
++    value: { yamlDefaults: {
++      getDiagnosticsOptions: () => yaml.getOptions(),
++      setDiagnosticsOptions: (options) => yaml.update(options),
++    } },
++  });
++}
+diff --git a/packages/ui-default/components/monaco/schema/problemconfig.ts b/packages/ui-default/components/monaco/schema/problemconfig.ts
+index 3c9820d..9ea61f5 100644
+--- a/packages/ui-default/components/monaco/schema/problemconfig.ts
++++ b/packages/ui-default/components/monaco/schema/problemconfig.ts
+@@ -116,6 +116,16 @@ const problemConfigSchema: JSONSchema7 = {
+     },
+     time_limit_rate: { $ref: '#/definitions/rateConfig' },
+     memory_limit_rate: { $ref: '#/definitions/rateConfig' },
++    rmj: {
++      type: 'object',
++      properties: {
++        enabled: { type: 'boolean' },
++        platform: { enum: ['codeforces', 'vjudge'] },
++        target: { type: 'string' },
++        localType: { type: 'string' },
++      },
++      additionalProperties: false,
++    },
+   },
+   additionalProperties: false,
+ };

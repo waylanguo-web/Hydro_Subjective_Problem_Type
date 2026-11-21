@@ -1,6 +1,6 @@
 # Hydro 主观题
 
-适配 HydroOJ `5.1.0` 和 `@hydrooj/ui-default` `4.59.0`。题目评测设置新增 `type: subjective`，题库练习和作业支持每次递交 1–10 个文件，接受任意文件格式，合计最多 20,000,000 字节。站点管理员和提交所在域的域设置管理员可在「记录 → 主观题待评分」中打分、填写评语及查看修改历史。
+适配 HydroOJ `5.0.7` / UI `4.58.5` 和 HydroOJ `5.1.0` / UI `4.59.0`。题目评测设置新增 `type: subjective`，题库练习和作业支持每次递交 1–10 个文件，接受任意文件格式，合计最多 20,000,000 字节。站点管理员和提交所在域的域设置管理员可在「记录 → 主观题待评分」中打分、填写评语及查看修改历史。
 
 - 作业沿用 Hydro 截止时间、最后一次递交和迟交扣分规则。新递交待评分时暂计 0 分，给旧提交补评分只更新旧记录。
 - 附件通过鉴权的下载路由提供给提交者本人及评分管理员。附件元数据和完整评分历史保存在 MongoDB 的 `subjective.submissions`，评分结果另行同步到 Hydro 的提交记录和作业成绩。
@@ -17,7 +17,7 @@ npm test
 
 ## 构建 Hydro 界面资源
 
-题型选择器和 Monaco YAML 校验器位于 `ui-default` 的核心前端。部署需要同时安装这个插件和编译后的核心 UI 资源。使用上游 `5.1.0` 发布时的源码、Node.js 22 或 24、Corepack 和 Bash 构建。
+题型选择器和 Monaco YAML 校验器位于 `ui-default` 的核心前端。部署需要同时安装这个插件和与现网 UI 版本匹配的核心资源。使用 Node.js 22 或 24、Corepack 和 Bash 构建。UI `4.58.5` 使用上游提交 `11fc1f59c9dba8f790f363d222d4012267d36be0`。UI `4.59.0` 使用上游提交 `02563a8531e2e73e7194034d0b9ea6efe60b534f`。
 
 ```sh
 git clone https://github.com/hydro-dev/Hydro.git hydro-source
