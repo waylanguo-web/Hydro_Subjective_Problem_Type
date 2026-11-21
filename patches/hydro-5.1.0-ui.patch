@@ -69,7 +69,7 @@ index 875551e..3c9820d 100644
      langs: { type: 'array', items: { type: 'string' } },
      target: { type: 'string' },
 diff --git a/packages/ui-default/components/problemconfig/ProblemConfigEditor.tsx b/packages/ui-default/components/problemconfig/ProblemConfigEditor.tsx
-index 23fc449..42aa23c 100644
+index 23fc449..d588c71 100644
 --- a/packages/ui-default/components/problemconfig/ProblemConfigEditor.tsx
 +++ b/packages/ui-default/components/problemconfig/ProblemConfigEditor.tsx
 @@ -42,6 +42,7 @@ const subtasksKey = [
@@ -80,6 +80,14 @@ index 23fc449..42aa23c 100644
    const formatConfig: ProblemConfigFile = {};
    configKey.forEach((key) => {
      if (config[key] !== undefined) {
+@@ -101,6 +102,7 @@ export default connect(mapStateToProps, mapDispatchToProps)(class MonacoEditor e
+     this.model = monaco.editor.createModel(yaml.dump(configYamlFormat(this.props.config), { seqNoIndent: true }), 'yaml', uri);
+     this.vjEditor = Editor.getOrConstruct($(this.containerElement), {
+       language: 'yaml',
++      autoResize: false,
+       model: this.model,
+       lineNumbers: 'off',
+       onChange: (value: string) => {
 diff --git a/packages/ui-default/components/problemconfig/ProblemConfigForm.tsx b/packages/ui-default/components/problemconfig/ProblemConfigForm.tsx
 index 41f6b5c..f0e6cca 100644
 --- a/packages/ui-default/components/problemconfig/ProblemConfigForm.tsx
@@ -131,18 +139,35 @@ index cd53144..ff6c003 100644
            <>
              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
 diff --git a/packages/ui-default/components/problemconfig/index.tsx b/packages/ui-default/components/problemconfig/index.tsx
-index db39720..818d06b 100644
+index db39720..f5c580d 100644
 --- a/packages/ui-default/components/problemconfig/index.tsx
 +++ b/packages/ui-default/components/problemconfig/index.tsx
-@@ -20,6 +20,7 @@ export default function ProblemConfig(props: Props) {
+@@ -18,8 +18,8 @@ export default function ProblemConfig(props: Props) {
+   const [selected, setSelected] = React.useState('basic');
+   const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
    const [tabs, setTabs] = React.useState<HTMLDivElement | null>(null);
-   const [editor, setEditor] = React.useState<any>(null);
+-  const [editor, setEditor] = React.useState<any>(null);
    const store = useStore<RootState>();
 +  const manual = useSelector((state: RootState) => state.config.type === 'subjective');
    const valid = useSelector((state: RootState) => state.config.__valid);
    const errors = useSelector((state: RootState) => state.config.__errors, (a, b) => JSON.stringify(a) === JSON.stringify(b));
  
-@@ -59,7 +60,7 @@ export default function ProblemConfig(props: Props) {
+@@ -35,7 +35,6 @@ export default function ProblemConfig(props: Props) {
+       setTimeout(() => {
+         const target = Math.max(container.clientHeight, tabs?.clientHeight || 0);
+         container.style.height = `${target}px`;
+-        if (editor) editor.layout();
+       }, 50);
+     };
+     const dispose = store.subscribe(callback);
+@@ -53,13 +52,13 @@ export default function ProblemConfig(props: Props) {
+         className="problem-config-allotment">
+         <Allotment.Pane>
+           <div style={{ height: '100%', overflow: 'auto' }}>
+-            <ProblemConfigEditor ref={setEditor} />
++            <ProblemConfigEditor />
+           </div>
+         </Allotment.Pane>
          <Allotment.Pane>
            <Tabs
              ref={setTabs}
@@ -151,7 +176,7 @@ index db39720..818d06b 100644
              keepMounted={false}
              style={{ paddingLeft: 20 }}
              onChange={(t) => (t !== 'errors' && t && setSelected(t.toString()))}
-@@ -67,7 +68,7 @@ export default function ProblemConfig(props: Props) {
+@@ -67,7 +66,7 @@ export default function ProblemConfig(props: Props) {
              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                <Tabs.List>
                  <Tabs.Tab value="basic" disabled={!valid}>{i18n('Basic')}</Tabs.Tab>
