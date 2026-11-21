@@ -34,7 +34,7 @@ async function install(ctx, hydro) {
         return record;
     }
 
-    async function showRecord(h, entry) {
+    async function showRecord(h, entry, reviewing = false) {
         const admin = canGrade(h);
         const isOwner = h.user._id === entry.uid;
         const { domainId, pid, uid, contest, _id, latest, revision } = entry;
@@ -51,6 +51,7 @@ async function install(ctx, hydro) {
             revision: admin ? revision : undefined, history: admin ? entry.history.slice().reverse() : undefined,
             gradeUrl: admin ? h.url('subjective_grade', { domainId, rid: _id }) : undefined,
             subjectiveCsrf: admin ? csrf(h) : undefined, maxComment: MAX_COMMENT,
+            reviewing, reviewQueueUrl: reviewing ? h.url('subjective_queue', { domainId }) : undefined,
         };
         h.response.addHeader('Cache-Control', 'private, no-store');
     }
@@ -169,6 +170,7 @@ async function install(ctx, hydro) {
             let grade;
             try { grade = gradeInput(this.args); } catch (error) { fail(error.message); }
             const entry = await findSubmission(this, id);
+            const reviewing = this.args.reviewing === '1';
             const latest = { score: grade.score, comment: grade.comment, by: this.user._id, at: new Date() };
             const result = await submissions.updateOne({ _id: id, domainId: entry.domainId, revision: grade.revision }, {
                 $set: { latest, dirty: true }, $inc: { revision: 1 }, $push: { history: latest },
@@ -179,14 +181,14 @@ async function install(ctx, hydro) {
                     && current.latest.score === latest.score && current.latest.comment === latest.comment;
                 if (!sameWrite) {
                     this.response.status = 409;
-                    await showRecord(this, current);
+                    await showRecord(this, current, reviewing);
                     this.response.body.gradeConflict = true;
                     return;
                 }
             }
             try { await sync(id); } catch (error) { console.error('[subjective] Grade synchronization pending', String(id), error.message); }
             this.response.body = { rid: id };
-            this.response.redirect = this.url('record_detail', { domainId: entry.domainId, rid: id });
+            this.response.redirect = this.url(reviewing ? 'subjective_review' : 'record_detail', { domainId: entry.domainId, rid: id });
         }
     }
 
@@ -223,14 +225,24 @@ async function install(ctx, hydro) {
                 .sort({ _id: 1 }).limit(51).toArray();
             const next = entries.length > 50 ? entries[49]._id : null;
             this.response.template = 'subjective_queue.html';
-            this.response.body = { entries: entries.slice(0, 50), filterPid: pid, filterTid: tid,
+            this.response.body = { page_name: 'subjective_queue', entries: entries.slice(0, 50), filterPid: pid, filterTid: tid,
                 nextUrl: next && this.url('subjective_queue', { query: { ...(pid ? { pid } : {}), ...(tid ? { tid } : {}), after: next } }) };
+        }
+    }
+
+    class SubjectiveReviewHandler extends Handler {
+        async get() {
+            requireAdmin(this);
+            await showRecord(this, await findSubmission(this, objectId(this.args.rid)), true);
         }
     }
 
     ctx.Route('subjective_grade', '/subjective/record/:rid/grade', SubjectiveGradeHandler, PRIV.PRIV_USER_PROFILE);
     ctx.Route('subjective_attachment', '/subjective/record/:rid/attachment/:index', SubjectiveAttachmentHandler, PRIV.PRIV_USER_PROFILE);
-    ctx.Route('subjective_queue', '/subjective/queue', SubjectiveQueueHandler, PRIV.PRIV_USER_PROFILE);
+    ctx.Route('subjective_queue', '/domain/subjective', SubjectiveQueueHandler, PRIV.PRIV_USER_PROFILE);
+    ctx.Route('subjective_review', '/domain/subjective/:rid', SubjectiveReviewHandler, PRIV.PRIV_USER_PROFILE);
+    ctx.Route('subjective_queue_legacy', '/subjective/queue', SubjectiveQueueHandler, PRIV.PRIV_USER_PROFILE);
+    ctx.injectUI('DomainManage', 'subjective_queue', { family: 'Properties', icon: 'info' }, canGrade);
     ctx.on('handler/after/RecordList#get', (h) => {
         if (canGrade(h)) h.response.body.subjectiveQueueUrl = h.url('subjective_queue', { domainId: h.domain._id });
     });

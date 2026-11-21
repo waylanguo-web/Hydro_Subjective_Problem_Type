@@ -1,7 +1,5 @@
-{% extends "layout/basic.html" %}
-{% block content %}
-<div class="row">
-  <div class="medium-12 columns">
+{% extends "domain_base.html" %}
+{% block domain_content %}
     <div class="section">
       <div class="section__header"><h1 class="section__title">{{ _('Subjective grading queue') }}</h1></div>
       <div class="section__body typo">
@@ -20,7 +18,7 @@
               <td><a href="{{ url('problem_detail', pid=entry.pid, query={tid:entry.contest} if entry.contest else {}) }}">{{ entry.pid }}</a></td>
               <td><a href="{{ url('user_detail', uid=entry.uid) }}">{{ entry.uid }}</a></td>
               <td>{% if entry.contest %}<a href="{{ url('homework_detail', tid=entry.contest) }}">{{ entry.contest }}</a>{% else %}—{% endif %}</td>
-              <td><a href="{{ url('record_detail', rid=entry._id) }}">{{ _('Awaiting grading') }}</a></td>
+              <td><a href="{{ url('subjective_review', rid=entry._id) }}">{{ _('Awaiting grading') }}</a></td>
             </tr>
             {% endfor %}
           </tbody>
@@ -29,6 +27,4 @@
         {% if nextUrl %}<a class="button" href="{{ nextUrl }}">{{ _('Next Page') }}</a>{% endif %}
       </div>
     </div>
-  </div>
-</div>
 {% endblock %}

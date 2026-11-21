@@ -7,6 +7,7 @@
     <div class="section">
       <div class="section__header">
         <h1 class="section__title">{{ _('Subjective submission') }}</h1>
+        {% if reviewing %}<div class="section__tools"><a class="button" href="{{ reviewQueueUrl }}">{{ _('Subjective grading queue') }}</a></div>{% endif %}
       </div>
       <div class="section__body typo">
         <p><strong>{{ _('Graded') if graded else _('Awaiting grading') }}</strong>{% if graded %} · {{ score }} / 100{% endif %}</p>
@@ -29,6 +30,7 @@
         <form action="{{ gradeUrl }}" method="post">
           <input type="hidden" name="subjectiveCsrf" value="{{ subjectiveCsrf }}">
           <input type="hidden" name="revision" value="{{ revision }}">
+          {% if reviewing %}<input type="hidden" name="reviewing" value="1">{% endif %}
           <label for="subjective-score">{{ _('Score (0–100)') }}</label>
           <input id="subjective-score" class="textbox subjective-score" name="score" type="number" min="0" max="100" step="1" value="{{ score if graded else '' }}" required>
           <label for="subjective-comment">{{ _('Feedback (optional)') }}</label>

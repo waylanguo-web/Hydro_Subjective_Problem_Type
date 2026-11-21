@@ -119,9 +119,20 @@ const request = localRequire('supertest');
         const gradeWith = (form, who, score, comment) => requestTo.post(form.gradeUrl).set('Cookie', who)
             .set('Accept', 'application/json').send({ subjectiveCsrf: form.subjectiveCsrf, revision: form.revision, score, comment });
         await gradeWith(toGrade, student, 100, 'bypass').expect(403);
-        const queue = await getForm('/subjective/queue', reviewer);
+        const queue = await getForm('/domain/subjective', reviewer);
         assert.equal(queue.body.entries[0]._id, first.body.rid);
+        assert.equal((await getForm('/subjective/queue', reviewer)).body.entries[0]._id, first.body.rid);
+        await requestTo.get('/domain/dashboard').set('Cookie', reviewer).set('Accept-Language', 'zh-CN').expect(200).expect(/主观题批改/);
+        const reviewPath = `/domain/subjective/${first.body.rid}`;
+        const review = (await getForm(reviewPath, reviewer)).body;
+        assert.equal(review.reviewing, true);
+        for (const path of ['/domain/subjective', reviewPath]) {
+            await requestTo.get(path).set('Cookie', student).set('Accept', 'application/json').expect(403);
+        }
         await requestTo.get('/record').set('Cookie', reviewer).set('Accept-Language', 'en').expect(200).expect(/Subjective grading queue/);
+        const posted = await requestTo.post(review.gradeUrl).set('Cookie', reviewer).set('Accept', 'application/json')
+            .send({ subjectiveCsrf: review.subjectiveCsrf, revision: review.revision, score: 100, comment: 'Well done', reviewing: '1' }).expect(200);
+        assert.equal(posted.body.url, reviewPath);
         await gradeWith(toGrade, reviewer, 100, 'Well done').expect(200);
         await gradeWith(toGrade, reviewer, 100, 'Well done').expect(200);
         assert.equal((await getForm(resultPath, reviewer)).body.history.length, 1);
