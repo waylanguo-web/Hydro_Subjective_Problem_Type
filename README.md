@@ -33,3 +33,5 @@ bash scripts/build-ui.sh hydro-source ./subjective-ui-4.59.0.tar.gz
 2. 在维护窗口备份当前 UI 的 `public`、`templates` 和 Hydro 的插件配置。将插件仓库检出到固定提交，运行 `npm ci --omit=dev`。把 UI 归档解包到已确认的 `ui-default` 安装路径，使归档内的 `public/` 和 `templates/` 覆盖对应文件。
 3. 用 `hydrooj addon add /absolute/path/to/Hydro_Subjective_Problem_Type` 注册插件。按站点原有方式重启 Hydro 服务，确认日志中 UI 插件构建成功、首页正常，并执行上面的验收场景。
 4. 回滚仅界面时，恢复备份的 UI 文件并重启，保留后端插件以维持已有主观题的递交保护和历史。全面回滚时，先从站点入口暂停题目递交，再恢复界面和插件配置，保留 MongoDB 数据及附件。恢复递交前，确认仍在使用的主观题由支持它的后端处理。
+
+UI 归档内的 `templates/layout/html5.html` 使用构建产物的内容哈希标记前端入口。上线后可查看页面源码，确认 `hydro-*.js` 脚本地址包含 `?v=`，让已有浏览器获取与当前构建匹配的入口文件。

@@ -21,10 +21,13 @@ if ! git diff --quiet HEAD --; then
 fi
 
 applied=()
+staged=$(mktemp -d)
 restore_source() {
     for ((index = ${#applied[@]} - 1; index >= 0; index--)); do
         git apply --reverse "${applied[index]}"
     done
+    rm -f -- "$staged/templates/layout/html5.html"
+    rmdir -- "$staged/templates/layout" "$staged/templates" "$staged" 2>/dev/null || true
 }
 trap restore_source EXIT
 for patch_file in "${patches[@]}"; do
@@ -40,4 +43,5 @@ node packages/ui-default/build --iconfont
 node packages/ui-default/build --production
 
 mapfile -t patched_templates < <(git diff --name-only -- packages/ui-default/templates | sed 's#^packages/ui-default/##')
-tar -C packages/ui-default -czf "$archive" public "${patched_templates[@]}"
+node "$plugin_dir/scripts/version-ui.cjs" packages/ui-default "$staged/templates/layout/html5.html"
+tar -C packages/ui-default -czf "$archive" public "${patched_templates[@]}" -C "$staged" templates/layout/html5.html
